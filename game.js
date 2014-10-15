@@ -3,18 +3,6 @@ BasicGame.Game = function(game) {
 };
 
 BasicGame.Game.prototype = {
-  preload: function() {
-    this.load.image('sea', 'assets/sea.png');
-    this.load.image('bullet', 'assets/bullet.png');
-    this.load.image('enemyBullet', 'assets/enemy-bullet.png');
-    this.load.image('powerup1', 'assets/powerup1.png');
-    this.load.spritesheet('greenEnemy', 'assets/enemy.png', 32, 32);
-    this.load.spritesheet('whiteEnemy', 'assets/shooting-enemy.png', 32, 32);
-    this.load.spritesheet('boss', 'assets/boss.png', 93, 75);
-    this.load.spritesheet('explosion', 'assets/explosion.png', 32, 32);
-    this.load.spritesheet('player', 'assets/player.png', 64, 64);
-  },
-
   create: function() {
     this.setupBackground();
     this.setupPlayer();
@@ -23,6 +11,7 @@ BasicGame.Game.prototype = {
     this.setupExplosions();
     this.setupPlayerIcons();
     this.setupText();
+    this.setupAudio();
 
     this.cursors = this.input.keyboard.createCursorKeys();
   },
@@ -175,7 +164,7 @@ BasicGame.Game.prototype = {
 
   setupText: function() {
     this.instructions = this.add.text(this.game.width / 2, this.game.height - 100,
-      'Use Arrow Keys to Move, Press Space to Fire\n' + 'Tapping/clicking does both', {
+      'Use Arrow Keys to Move, Press Space to Fire\n' + 'Tapping/clicking does both\n' + 'Press M to toggle sound', {
         font: '20px monospace',
         fill: '#fff',
         align: 'center'
@@ -193,6 +182,27 @@ BasicGame.Game.prototype = {
       }
     );
     this.scoreText.anchor.setTo(0.5, 0.5);
+  },
+
+  setupAudio: function() {
+    this.explosionSFX = this.add.audio('explosion');
+    this.playerExplosionSFX = this.add.audio('playerExplosion');
+    this.enemyFireSFX = this.add.audio('enemyFire');
+    this.playerFireSFX = this.add.audio('playerFire');
+    this.powerUpSFX = this.add.audio('powerUp');
+    
+    var muteKey = this.game.input.keyboard.addKey(Phaser.Keyboard.M);
+    muteKey.onDown.add(this.toggleMute, this);
+  },
+
+  toggleMute: function() {
+    this.previousVolume = this.sound.volume;
+
+    if (this.previousVolume === 0) {
+      this.sound.volume = 0.1;
+    } else {
+      this.sound.volume = 0;
+    }
   },
 
   update: function() {
@@ -301,7 +311,7 @@ BasicGame.Game.prototype = {
     if (this.showReturn && this.time.now > this.showReturn) {
       this.returnText = this.add.text(
         this.game.width / 2, this.game.height / 2 + 20,
-        'Press Spacebar or Tap Game to go back to Main Menu', {
+        'Press Spacebar or Tap Game to restart', {
           font: '16px sans-serif',
           fill: '#fff'
         }
@@ -328,6 +338,7 @@ BasicGame.Game.prototype = {
     // Limits bullet shooting
     if (!this.player.alive || this.nextShotAt > this.time.now) return;
     this.nextShotAt = this.time.now + this.shotDelay;
+    this.playerFireSFX.play();
 
     var bullet;
     if (this.weaponLevel === 0) {
@@ -359,6 +370,7 @@ BasicGame.Game.prototype = {
         this.physics.arcade.moveToObject(
           bullet, this.player, BasicGame.ENEMY_BULLET_VELOCITY);
         enemy.nextShotAt = this.time.now + BasicGame.SHOOTER_SHOT_DELAY;
+        this.enemyFireSFX.play();
       }
     }, this);
 
@@ -367,6 +379,7 @@ BasicGame.Game.prototype = {
       this.boss.nextShotAt < this.time.now &&
       this.enemyBullets.countDead() >= 10) {
       this.boss.nextShotAt = this.time.now + BasicGame.BOSS_SHOT_DELAY;
+      this.enemyFireSFX.play();
       for (var i = 0; i < 5; i++) {
         var leftBullet = this.enemyBullets.getFirstExists(false);
         leftBullet.reset(this.boss.x - 10 - i * 10, this.boss.y + 20);
@@ -398,10 +411,12 @@ BasicGame.Game.prototype = {
     if (this.ghostUntil && this.ghostUntil > this.time.now) {
       return;
     }
+
+    this.playerExplosionSFX.play();
+
     this.damageEnemy(enemy, BasicGame.CRASH_DAMAGE);
 
     var life = this.lives.getFirstAlive();
-
     if (life) {
       life.kill();
       this.weaponLevel = 0;
@@ -425,15 +440,16 @@ BasicGame.Game.prototype = {
       enemy.play('hit');
     } else {
       this.explode(enemy);
+      this.explosionSFX.play();
       this.spawnPowerUp(enemy);
       this.addToScore(enemy.reward);
       // We check the sprite key (e.g. 'greenEnemy') to see if the sprite is a boss 
       // For full games, it would be better to set flags on the sprites themselves 
       if (enemy.key === 'boss') {
-        this.enemyPool.destroy();
-        this.shooterPool.destroy();
-        this.bossPool.destroy();
-        this.enemyBulletPool.destroy();
+        this.enemies.destroy();
+        this.shooters.destroy();
+        this.bosses.destroy();
+        this.enemyBullets.destroy();
         this.displayEnd(true);
       }
     }
@@ -453,6 +469,7 @@ BasicGame.Game.prototype = {
   playerPowerUp: function(player, powerUp) {
     this.addToScore(powerUp.reward);
     powerUp.kill();
+    this.powerUpSFX.play();
     if (this.weaponLevel < 5) {
       this.weaponLevel += 1;
     }
@@ -462,7 +479,7 @@ BasicGame.Game.prototype = {
     this.score += score;
     this.scoreText.text = this.score;
 
-    if (this.score >= 20000 && this.bosses.countDead() === 1) {
+    if (this.score >= 10000 && this.bosses.countDead() === 1) {
       this.spawnBoss();
     }
   },
@@ -503,8 +520,16 @@ BasicGame.Game.prototype = {
     this.scoreText.destroy();
     this.endText.destroy();
     this.returnText.destroy();
-
-    this.state.start('MainMenu');
+    this.shooters.destroy();
+    this.enemyBullets.destroy();
+    this.powerups.destroy();
+    this.bosses.destroy();
+    this.explosionSFX.destroy();
+    this.playerExplosionSFX.destroy();
+    this.enemyFireSFX.destroy();
+    this.playerFireSFX.destroy();
+    this.powerUpSFX.destroy();
+    this.state.start('Game');
   }
 
 };

@@ -39,9 +39,6 @@ BasicGame.Preloader.prototype = {
     this.load.audio('enemyFire', ['assets/enemy-fire.ogg', 'assets/enemy-fire.wav']);
     this.load.audio('playerFire', ['assets/player-fire.ogg', 'assets/player-fire.wav']);
     this.load.audio('powerUp', ['assets/powerup.ogg', 'assets/powerup.wav']);
-    //this.load.audio('titleMusic', ['audio/main_menu.mp3']);
-    //  + lots of other required assets here
-
   },
 
   create: function () {
@@ -65,7 +62,7 @@ BasicGame.Preloader.prototype = {
     //if (this.cache.isSoundDecoded('titleMusic') && this.ready == false)
     //{
     //  this.ready = true;
-      this.state.start('MainMenu');
+      this.state.start('Game');
     //}
 
   }

@@ -12,8 +12,7 @@ window.onload = function() {
   game.state.add('Game', BasicGame.Game);
 
   //  Now start the Boot state.
-  // game.state.start('Boot');
-  game.state.start('Game');
+  game.state.start('Boot');
 
   //Prevent spacebar from activating page down
   document.documentElement.addEventListener('keydown', function(e) {

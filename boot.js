@@ -20,7 +20,7 @@ var BasicGame = {
 
   ENEMY_HEALTH: 2,
   SHOOTER_HEALTH: 5,
-  BOSS_HEALTH: 500,
+  BOSS_HEALTH: 400,
 
   BULLET_DAMAGE: 1,
   CRASH_DAMAGE: 5,
@@ -30,7 +30,7 @@ var BasicGame = {
   BOSS_REWARD: 10000,
   POWERUP_REWARD: 100,
 
-  ENEMY_DROP_RATE: 0.3,
+  ENEMY_DROP_RATE: 0.25,
   SHOOTER_DROP_RATE: 0.5,
   BOSS_DROP_RATE: 0,
 
@@ -55,6 +55,7 @@ BasicGame.Boot.prototype = {
   },
 
   create: function () {
+    this.sound.volume = 0;
 
     //  Unless you specifically know your game needs to support multi-touch I would recommend setting this to 1
     this.input.maxPointers = 1;
