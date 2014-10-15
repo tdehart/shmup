@@ -167,7 +167,11 @@ BasicGame.Game.prototype = {
     }
 
     if (this.input.keyboard.isDown(Phaser.Keyboard.SPACEBAR) || this.input.activePointer.isDown) {
-      this.fireBullet();
+      if (this.returnText && this.returnText.exists) {
+        this.quitGame();
+      } else {
+        this.fireBullet();
+      }
     }
   },
 
@@ -179,6 +183,18 @@ BasicGame.Game.prototype = {
     if (this.ghostUntil && this.ghostUntil < this.time.now) {
       this.ghostUntil = null;
       this.player.play('fly');
+    }
+
+    if (this.showReturn && this.time.now > this.showReturn) {
+      this.returnText = this.add.text(
+        this.game.width / 2, this.game.height / 2 + 20,
+        'Press Spacebar or Tap Game to go back to Main Menu', {
+          font: '16px sans-serif',
+          fill: '#fff'
+        }
+      );
+      this.returnText.anchor.setTo(0.5, 0.5);
+      this.showReturn = false;
     }
   },
 
@@ -215,6 +231,7 @@ BasicGame.Game.prototype = {
     } else {
       this.explode(player);
       player.kill();
+      this.displayEnd(false);
     }
   },
 
@@ -236,6 +253,11 @@ BasicGame.Game.prototype = {
   addToScore: function(score) {
     this.score += score;
     this.scoreText.text = this.score;
+
+    if (this.score >= 2000) {
+      this.enemies.destroy();
+      this.displayEnd(true);
+    }
   },
 
   explode: function(sprite) {
@@ -249,7 +271,32 @@ BasicGame.Game.prototype = {
     explosion.body.velocity.y = sprite.body.velocity.y;
   },
 
+  displayEnd: function(win) {
+    if (this.endText && this.endText.exists) {
+      return;
+    }
+    var msg = win ? 'You Win!!!' : 'Game Over!';
+    this.endText = this.add.text(
+      this.game.width / 2, this.game.height / 2 - 60, msg, {
+        font: '72px serif',
+        fill: '#fff'
+      }
+    );
+    this.endText.anchor.setTo(0.5, 0);
+    this.showReturn = this.time.now + BasicGame.RETURN_MESSAGE_DELAY;
+  },
+
   quitGame: function(pointer) {
+    this.sea.destroy();
+    this.player.destroy();
+    this.enemies.destroy();
+    this.bullets.destroy();
+    this.explosions.destroy();
+    this.instructions.destroy();
+    this.scoreText.destroy();
+    this.endText.destroy();
+    this.returnText.destroy();
+
     this.state.start('MainMenu');
   }
 
