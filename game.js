@@ -330,10 +330,6 @@ BasicGame.Game.prototype = {
     }
   },
 
-  render: function() {
-    this.game.debug.body(this.player);
-  },
-
   fireBullet: function() {
     // Limits bullet shooting
     if (!this.player.alive || this.nextShotAt > this.time.now) return;
